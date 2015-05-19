@@ -21,8 +21,8 @@ import android.widget.TextView;
 public class PracticalTest02Var04MainActivity extends Activity {
 	
 	/* Elements. */
-	TextView portTextView;
-	TextView urlTextView;
+	EditText portTextView;
+	EditText urlTextView;
 	EditText editTextUrlContent;
 	Button buttonStart;
 	Button buttonStop;
@@ -39,9 +39,16 @@ public class PracticalTest02Var04MainActivity extends Activity {
 		
 		public CommunicationThread(Socket socket, Map<String, String> hash) {
 			this.socket = socket;
+			this.hash = hash;
 		}
 		
 		public String getHtmlContent(String url) {
+			if (hash == null)
+				Log.v(TAG, "Hash is null");
+			
+			if (url == null)
+				Log.v(TAG, "URL is null");
+			
 			if (hash.containsKey(url)) {
 				Log.v(TAG, "URL served from LOCAL CACHE.");
 				
@@ -66,11 +73,14 @@ public class PracticalTest02Var04MainActivity extends Activity {
 				BufferedReader reader = Utilities.getReader(socket);
 				String url = reader.readLine();
 				
+				Log.v(TAG, "SERVER read: " + url);
+				
 				/* Find the html content and insert it into the hash. */
 				String htmlContent = getHtmlContent(url);
 				hash.put(url, htmlContent);
 				
 				/* Get writer and respond with html content. */
+				Log.v(TAG, "SERVER wrote: " + htmlContent);
 				PrintWriter printWriter = Utilities.getWriter(socket);
 				printWriter.println(htmlContent);
 				socket.close();
@@ -85,15 +95,21 @@ public class PracticalTest02Var04MainActivity extends Activity {
 	}
 	
 	/* Server thread --- code. */
-	private class ServerThread extends Thread {
+	public class ServerThread extends Thread {
 		private boolean isRunning;
 		private ServerSocket serverSocket;
-		private Map<String, String> hash;	// Map between url and content.
+		public Map<String, String> hash;
 		public static final String TAG = "SERVER";
 		
-		public void startServer() {
-			hash = new HashMap<String, String>();
+		public ServerThread() {
+			super();
 			
+			hash = new HashMap<String, String>();
+
+			Log.v(TAG, "Instantiate hash map!");
+		}
+		
+		public void startServer() {
 			isRunning = true;
 			start();
 			Log.v(TAG, "startServer() method invoked");
@@ -120,7 +136,8 @@ public class PracticalTest02Var04MainActivity extends Activity {
 
 				while (isRunning) {
 					Socket socket = serverSocket.accept();
-					new CommunicationThread(socket, hash).start();
+					CommunicationThread xx = new CommunicationThread(socket, hash);
+					xx.start();
 				}
 				
 			} catch (IOException ioException) {
@@ -156,7 +173,10 @@ public class PracticalTest02Var04MainActivity extends Activity {
 				
 				// Send url to server.
 				PrintWriter writer = Utilities.getWriter(socket);
-				writer.write(url);
+				writer.println(url);
+				writer.flush();
+				
+				Log.v(TAG, "CLIENT wrote: " + url);
 				
 				// Read.
 				BufferedReader bufferedReader = Utilities.getReader(socket);
@@ -216,8 +236,8 @@ public class PracticalTest02Var04MainActivity extends Activity {
 		setContentView(R.layout.activity_practical_test02_var04_main);
 		
 		/* Find all elements. */
-		portTextView = (TextView) findViewById(R.id.textViewPort);
-		urlTextView = (TextView) findViewById(R.id.textViewPort);
+		portTextView = (EditText) findViewById(R.id.textViewPort);
+		urlTextView = (EditText) findViewById(R.id.textViewUrl);
 		editTextUrlContent = (EditText) findViewById(R.id.editTextUrlContent);
 		buttonStart = (Button) findViewById(R.id.buttonStart);
 		buttonStop = (Button) findViewById(R.id.buttonStop);
